@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  nip       String?
+  password  String
+  role      String    @default("STAFF") // "ADMIN", "STAFF", "KASUBAG"
+  team      String    @default("Subbagian Umum") // Unit kerja / Tim di BPS
+  phone     String?
+  requests  Request[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  code  String?
+  items Item[]
+}
+
+model Item {
+  id           String        @id @default(cuid())
+  name         String
+  kodeSakti    String        @unique // 16 digit SAKTI atau kode BMN
+  barcode      String?       // Barcode kemasan pabrik (EAN-13 / Code 128)
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  satuan       String        // Rim, Buah, Pcs, Kotak, Botol, dll.
+  stokAwal     Int           @default(0)
+  stokSaatIni  Int           @default(0)
+  stokMinimum  Int           @default(5)
+  hargaSatuan  Float         @default(0)
+  stockIns     StockIn[]
+  requestItems RequestItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model StockIn {
+  id               String   @id @default(cuid())
+  tanggal          DateTime @default(now())
+  itemId           String
+  item             Item     @relation(fields: [itemId], references: [id])
+  jumlah           Int
+  sumber           String   @default("APBN") // APBN, Transfer Masuk BPS Provinsi
+  nomorNota        String?
+  metodePembayaran String?
+  hargaSatuan      Float    @default(0)
+  keterangan       String?
+  adminName        String?
+  createdAt        DateTime @default(now())
+}
+
+model Request {
+  id           String        @id @default(cuid())
+  nomorForm    String        @unique // Contoh: REQ/BPS/2026/001
+  tanggal      DateTime      @default(now())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  keperluan    String
+  status       String        @default("PENDING") // PENDING, APPROVED, REJECTED
+  catatanAdmin String?
+  approvedAt   DateTime?
+  approvedBy   String?
+  items        RequestItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model RequestItem {
+  id              String   @id @default(cuid())
+  requestId       String
+  request         Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            Item     @relation(fields: [itemId], references: [id])
+  jumlahDiminta   Int
+  jumlahDisetujui Int      @default(0)
+  keterangan      String?
+}
+
+model Setting {
+  id                      String   @id @default("default")
+  namaSatker              String   @default("BADAN PUSAT STATISTIK KABUPATEN SUKOHARJO")
+  kodeUakpb               String   @default("054.01.0300.019098")
+  kepalaBpsNama           String   @default("Anang Sarwoto, S.Si, MM")
+  kepalaBpsNip            String   @default("197505271997121001")
+  pengelolaPersediaanNama String   @default("Novia Dwima Santi, S.Tr.Stat")
+  pengelolaPersediaanNip  String   @default("199811062021042001")
+  alamat                  String?  @default("Jl. Jenderal Sudirman No. 199, Sukoharjo")
+  updatedAt               DateTime @updatedAt
+}
