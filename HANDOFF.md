@@ -134,8 +134,14 @@ web app managemen stok barang BPS sukoharjo/
      - *Keterangan*: Catatan alokasi/kegiatan pengadaan barang.
      - *Dicatat Oleh*: Nama Admin TU pencatat transaksi.
    - **Cetak Laporan Resmi Masuk (`StockInReportForm.tsx`):** Dokumen cetak siap PDF/printer bertajuk *"DAFTAR / BUKU PENERIMAAN BARANG PERSEDIAAN (ATK)"* ber-kop Satker BPS Sukoharjo (`054010300019098000KD`), rekap total kuantitas unit, dan tanda tangan resmi PPK/Kasubbag Umum serta Pengelola Persediaan TU.
-   - **Ekspor Excel (.xlsx):** Endpoint `GET /api/reports/export-excel?type=stock-in` menghasilkan file `.xlsx` untuk audit BMN / Inspektorat.
+   - **Ekspor Excel (.xlsx):** Endpoint `GET /api/reports/export-excel?type=stock-in` (menu *"Export Barang Masuk"*) menghasilkan file `.xlsx` untuk audit BMN / Inspektorat.
    - **Pencatatan Otomatis Saldo Awal:** Setiap penambahan barang baru dengan `stokAwal > 0` otomatis tercatat sebagai transaksi pengadaan pertama di tabel riwayat barang masuk.
+7. **Filter Tanggal pada Halaman Riwayat Bon (`activeTab === 'riwayat'`):**
+   - Dilengkapi pemilih tanggal (*date picker*) serta tombol *chip* tanggal cepat (*Pilih Cepat*) untuk menyaring daftar bon ATK berdasarkan tanggal pengajuan.
+8. **Pengaturan Profil Pengguna & Sinkronisasi Data Pelaporan (`activeTab === 'profil'` & `PUT /api/users`):**
+   - Mengklik kartu profil pengguna (*user bar*) di bagian atas *sidebar* (atau header mobile) akan membuka halaman **Pengaturan Profil Pengguna & Identitas Pelaporan**.
+   - Pengguna (Staf maupun Admin) dapat mengedit **Nama Lengkap & Gelar**, **NIP**, **Unit Kerja/Tim**, **Email**, **No. Telepon**, serta **Password**.
+   - Khusus Admin TU, perubahan Nama & NIP otomatis menyinkronkan identitas *Administrator Gudang / Pengelola Persediaan* pada `Setting` dan riwayat transaksi, serta menyediakan form pengaturan Kop Satker dan Nama/NIP Kepala BPS. Seluruh cetakan (`OfficialRequestForm`, `DailyRecapForm`, `StockInReportForm`) otomatis menyesuaikan dengan data terbaru.
 
 ---
 

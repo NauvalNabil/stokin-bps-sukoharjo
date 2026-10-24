@@ -24,8 +24,11 @@ interface StockInItem {
 
 interface SettingRecord {
   namaSatker?: string;
+  kepalaBpsNama?: string;
+  kepalaBpsNip?: string;
   pengelolaPersediaanNama?: string;
   pengelolaPersediaanNip?: string;
+  alamat?: string;
 }
 
 interface StockInReportFormProps {
@@ -261,13 +264,13 @@ export default function StockInReportForm({
           <div className="text-center w-64">
             <p className="text-slate-600 mb-16">
               Mengetahui,<br />
-              Pejabat Pembuat Komitmen / Kasubbag Umum
+              Kuasa Pengguna Barang / Kepala BPS
             </p>
             <p className="font-bold border-b border-slate-900 inline-block pb-0.5">
-              .......................................................
+              {setting?.kepalaBpsNama || 'Anang Sarwoto, S.Si, MM'}
             </p>
             <p className="text-[11px] text-slate-600 mt-0.5">
-              NIP. ................................................
+              NIP. {setting?.kepalaBpsNip || '197505271997121001'}
             </p>
           </div>
 
