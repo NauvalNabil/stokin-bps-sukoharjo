@@ -25,10 +25,12 @@ import {
   Pencil,
   Trash2,
   RotateCcw,
+  ArrowDownToLine,
 } from 'lucide-react';
 import BarcodeScannerModal from '@/components/BarcodeScannerModal';
 import OfficialRequestForm from '@/components/OfficialRequestForm';
 import DailyRecapForm from '@/components/DailyRecapForm';
+import StockInReportForm from '@/components/StockInReportForm';
 
 export default function Home() {
   // Authentication State
@@ -54,11 +56,16 @@ export default function Home() {
 
   // UI View states
   const [viewMode, setViewMode] = useState<'responsive' | 'mobile_preview'>('responsive');
-  const [activeTab, setActiveTab] = useState<'katalog' | 'approval' | 'riwayat'>('katalog');
+  const [activeTab, setActiveTab] = useState<'katalog' | 'approval' | 'riwayat' | 'barang_masuk'>('katalog');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerTarget, setScannerTarget] = useState<'cart' | 'stock_in_existing' | 'stock_in_new' | 'edit_item'>('cart');
   const [printRequest, setPrintRequest] = useState<any | null>(null);
   const [showDailyRecap, setShowDailyRecap] = useState(false);
+  const [showStockInReport, setShowStockInReport] = useState(false);
+
+  // Stock In tab search & filter
+  const [stockInSearch, setStockInSearch] = useState('');
+  const [stockInFilterSumber, setStockInFilterSumber] = useState('ALL');
 
   // Admin Edit Master Item Modal state
   const [editItemModalOpen, setEditItemModalOpen] = useState(false);
@@ -517,6 +524,20 @@ export default function Home() {
     ? requests
     : requests.filter((r) => r.userId === currentUser?.id);
 
+  // Filter Stock-In records for Admin view
+  const filteredStockIns = stockIns.filter((stk) => {
+    const q = stockInSearch.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      stk.item?.name?.toLowerCase().includes(q) ||
+      stk.item?.kodeSakti?.toLowerCase().includes(q) ||
+      (stk.nomorNota && stk.nomorNota.toLowerCase().includes(q)) ||
+      (stk.keterangan && stk.keterangan.toLowerCase().includes(q));
+    const matchSumber =
+      stockInFilterSumber === 'ALL' || stk.sumber === stockInFilterSumber;
+    return matchSearch && matchSumber;
+  });
+
   if (printRequest) {
     return (
       <OfficialRequestForm
@@ -533,6 +554,16 @@ export default function Home() {
         requests={requests}
         setting={setting}
         onBack={() => setShowDailyRecap(false)}
+      />
+    );
+  }
+
+  if (showStockInReport) {
+    return (
+      <StockInReportForm
+        stockIns={stockIns}
+        setting={setting}
+        onBack={() => setShowStockInReport(false)}
       />
     );
   }
@@ -743,7 +774,27 @@ export default function Home() {
                   </button>
                 )}
 
-                {/* 4. Permohonan / Riwayat Bon */}
+                {/* 4. ADMIN ONLY: Riwayat Barang Masuk */}
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    onClick={() => setActiveTab('barang_masuk')}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+                      activeTab === 'barang_masuk'
+                        ? 'bg-sky-600 text-white font-semibold shadow-xs'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ArrowDownToLine className="w-4 h-4" />
+                      <span>Riwayat Barang Masuk</span>
+                    </div>
+                    <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">
+                      {stockIns.length}
+                    </span>
+                  </button>
+                )}
+
+                {/* 5. Permohonan / Riwayat Bon */}
                 <button
                   onClick={() => setActiveTab('riwayat')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
@@ -756,7 +807,7 @@ export default function Home() {
                   <span>{currentUser.role === 'ADMIN' ? 'Semua Riwayat Bon' : 'Permohonan Saya'}</span>
                 </button>
 
-                {/* 5. ADMIN ONLY: Cetak Rekap Harian */}
+                {/* 6. ADMIN ONLY: Cetak Rekap Harian */}
                 {currentUser.role === 'ADMIN' && (
                   <button
                     onClick={() => setShowDailyRecap(true)}
@@ -767,7 +818,18 @@ export default function Home() {
                   </button>
                 )}
 
-                {/* 6. ADMIN ONLY: Export Rekap Persediaan Excel */}
+                {/* 7. ADMIN ONLY: Cetak Laporan Barang Masuk */}
+                {currentUser.role === 'ADMIN' && (
+                  <button
+                    onClick={() => setShowStockInReport(true)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak Laporan Masuk</span>
+                  </button>
+                )}
+
+                {/* 8. ADMIN ONLY: Export Rekap Persediaan Excel */}
                 {currentUser.role === 'ADMIN' && (
                   <a
                     href="/api/reports/export-excel"
@@ -775,7 +837,19 @@ export default function Home() {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
                   >
                     <Download className="w-4 h-4" />
-                    <span>Export Rekap Persediaan (Excel)</span>
+                    <span>Export Persediaan (Excel)</span>
+                  </a>
+                )}
+
+                {/* 9. ADMIN ONLY: Export Riwayat Barang Masuk Excel */}
+                {currentUser.role === 'ADMIN' && (
+                  <a
+                    href="/api/reports/export-excel?type=stock-in"
+                    target="_blank"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Export Masuk (Excel)</span>
                   </a>
                 )}
               </nav>
@@ -794,6 +868,7 @@ export default function Home() {
                   {activeTab === 'katalog' && 'Katalog & Persediaan Barang ATK'}
                   {activeTab === 'approval' && 'Persetujuan Permintaan Barang ATK'}
                   {activeTab === 'riwayat' && (currentUser.role === 'ADMIN' ? 'Semua Riwayat Bon ATK' : 'Riwayat Permintaan Saya')}
+                  {activeTab === 'barang_masuk' && 'Riwayat & Buku Penerimaan Barang Masuk (ATK)'}
                 </h2>
                 <p className="text-xs text-slate-500">
                   Satker: 054010300019098000KD - BPS Kabupaten Sukoharjo
@@ -861,8 +936,15 @@ export default function Home() {
                     <h3 className="text-2xl font-bold text-rose-600 mt-1">{criticalStockCount}</h3>
                     <p className="text-[10px] text-rose-500 font-semibold mt-1">Stok ≤ 5 item</p>
                   </div>
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-                    <p className="text-xs font-medium text-slate-500">Barang Masuk</p>
+                  <div
+                    onClick={() => setActiveTab('barang_masuk')}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs hover:border-sky-300 hover:shadow-xs transition-all cursor-pointer group"
+                    title="Klik untuk melihat riwayat barang masuk"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-slate-500 group-hover:text-sky-600 transition-colors">Barang Masuk</p>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-sky-600 transition-colors" />
+                    </div>
                     <h3 className="text-2xl font-bold text-sky-600 mt-1">{stockIns.length}</h3>
                     <p className="text-[10px] text-slate-400 mt-1">Transaksi pengadaan</p>
                   </div>
@@ -1289,15 +1371,232 @@ export default function Home() {
                 </div>
               )}
 
+              {/* -------------------------------------------------- */}
+              {/* TAB 4: RIWAYAT BARANG MASUK                        */}
+              {/* -------------------------------------------------- */}
+              {activeTab === 'barang_masuk' && currentUser.role === 'ADMIN' && (
+                <div className="space-y-4">
+                  {/* Header action bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div>
+                      <h3 className="font-bold text-xs text-slate-800">
+                        Buku Penerimaan Barang Persediaan (ATK)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Menampilkan seluruh riwayat barang masuk dari pengadaan APBN & transfer masuk
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => setStockInModalOpen(true)}
+                        className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Input Masuk</span>
+                      </button>
+                      <button
+                        onClick={() => setShowStockInReport(true)}
+                        className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Cetak Laporan</span>
+                      </button>
+                      <a
+                        href="/api/reports/export-excel?type=stock-in"
+                        target="_blank"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Excel</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Search and Filter toolbar */}
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Cari nama barang, kode, nomor BAST/nota, atau keterangan..."
+                        value={stockInSearch}
+                        onChange={(e) => setStockInSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-sky-500 shadow-2xs"
+                      />
+                      {stockInSearch && (
+                        <button
+                          onClick={() => setStockInSearch('')}
+                          className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <div className="w-full sm:w-60">
+                      <select
+                        value={stockInFilterSumber}
+                        onChange={(e) => setStockInFilterSumber(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-sky-500 shadow-2xs"
+                      >
+                        <option value="ALL">Semua Sumber Pengadaan</option>
+                        <option value="APBN">APBN DIPA Sukoharjo</option>
+                        <option value="Transfer Masuk BPS Provinsi">Transfer Masuk BPS Provinsi</option>
+                        <option value="Hibah / Lainnya">Hibah / Lainnya</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Data Table / Cards */}
+                  {filteredStockIns.length === 0 ? (
+                    <div className="bg-white p-8 rounded-2xl text-center border border-slate-200 text-slate-400 text-xs shadow-2xs">
+                      {stockIns.length === 0
+                        ? 'Belum ada transaksi barang masuk yang dicatat.'
+                        : 'Tidak ada data barang masuk yang sesuai dengan kata kunci pencarian.'}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Desktop Table */}
+                      <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-600 uppercase text-[10px] tracking-wider">
+                              <tr>
+                                <th className="px-4 py-3 w-10 text-center">No.</th>
+                                <th className="px-4 py-3 w-28">Tanggal</th>
+                                <th className="px-4 py-3">Nama & Kode Barang</th>
+                                <th className="px-4 py-3 w-28">Kategori</th>
+                                <th className="px-4 py-3 w-24 text-center">Jumlah</th>
+                                <th className="px-4 py-3 w-36">Sumber Pengadaan</th>
+                                <th className="px-4 py-3 w-36">No. Nota / BAST</th>
+                                <th className="px-4 py-3">Keterangan</th>
+                                <th className="px-4 py-3 w-28">Dicatat Oleh</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {filteredStockIns.map((stk, index) => {
+                                const d = new Date(stk.tanggal);
+                                const dateFormatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                                const timeFormatted = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                return (
+                                  <tr key={stk.id} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="px-4 py-3 text-center text-slate-400 font-medium">{index + 1}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                      <p className="font-semibold text-slate-800">{dateFormatted}</p>
+                                      <p className="text-[10px] text-slate-400 font-mono">{timeFormatted} WIB</p>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <p className="font-bold text-slate-900">{stk.item?.name || 'Barang Terhapus'}</p>
+                                      <p className="text-[10px] font-mono text-slate-500 mt-0.5">
+                                        Kode Barang: {stk.item?.kodeSakti || '-'}
+                                      </p>
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 font-medium">
+                                      {stk.item?.category?.name || '-'}
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                        +{stk.jumlah} {stk.item?.satuan || 'Pcs'}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span
+                                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                          stk.sumber.includes('Provinsi')
+                                            ? 'bg-purple-100 text-purple-800'
+                                            : stk.sumber === 'APBN'
+                                            ? 'bg-sky-100 text-sky-800'
+                                            : 'bg-slate-100 text-slate-800'
+                                        }`}
+                                      >
+                                        {stk.sumber}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 font-mono text-[11px]">
+                                      {stk.nomorNota ? (
+                                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-semibold">
+                                          {stk.nomorNota}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-400 italic">-</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600">
+                                      {stk.keterangan || <span className="text-slate-400 italic">-</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 text-[11px] font-medium">
+                                      {stk.adminName || 'Admin TU'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Mobile & Tablet Card Layout */}
+                      <div className="lg:hidden space-y-3">
+                        {filteredStockIns.map((stk) => {
+                          const d = new Date(stk.tanggal);
+                          const dateFormatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                          return (
+                            <div key={stk.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-[10px] font-mono text-slate-400 block">{dateFormatted} WIB</span>
+                                  <h4 className="font-bold text-slate-900 text-xs mt-0.5">{stk.item?.name || 'Barang Terhapus'}</h4>
+                                  <p className="text-[10px] font-mono text-slate-500">Kode Barang: {stk.item?.kodeSakti || '-'}</p>
+                                </div>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                                  +{stk.jumlah} {stk.item?.satuan || 'Pcs'}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 text-[11px]">
+                                <span className="text-slate-500">Sumber:</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                    stk.sumber.includes('Provinsi')
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : stk.sumber === 'APBN'
+                                      ? 'bg-sky-100 text-sky-800'
+                                      : 'bg-slate-100 text-slate-800'
+                                  }`}
+                                >
+                                  {stk.sumber}
+                                </span>
+                              </div>
+
+                              <div className="bg-slate-50 p-2.5 rounded-xl space-y-1 text-[11px] text-slate-600">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400">Bukti Nota / BAST:</span>
+                                  <span className="font-mono font-bold text-slate-700">{stk.nomorNota || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400">Keterangan:</span>
+                                  <span className="font-medium text-slate-700">{stk.keterangan || '-'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400">Dicatat oleh:</span>
+                                  <span className="font-medium text-slate-700">{stk.adminName || 'Admin TU'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
             </div>
 
             {/* ==================================================== */}
             {/* MOBILE BOTTOM NAVIGATION                             */}
             {/* ==================================================== */}
             <div
-              className={`bg-white border-t border-slate-200 px-6 py-2.5 flex items-center ${
-                currentUser.role === 'ADMIN' ? 'justify-around' : 'justify-between'
-              } text-slate-500 md:hidden sticky bottom-0 z-30`}
+              className="bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-around text-slate-500 md:hidden sticky bottom-0 z-30"
             >
               <button
                 onClick={() => setActiveTab('katalog')}
@@ -1324,6 +1623,23 @@ export default function Home() {
                 </button>
               )}
 
+              {currentUser.role === 'ADMIN' && (
+                <button
+                  onClick={() => setActiveTab('barang_masuk')}
+                  className={`flex flex-col items-center gap-1 relative ${
+                    activeTab === 'barang_masuk' ? 'text-sky-600 font-bold' : 'text-slate-400'
+                  }`}
+                >
+                  <ArrowDownToLine className="w-5 h-5" />
+                  <span className="text-[10px]">Masuk</span>
+                  {stockIns.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                      {stockIns.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
                 onClick={() => setActiveTab(currentUser.role === 'ADMIN' ? 'approval' : 'riwayat')}
                 className={`flex flex-col items-center gap-1 relative ${
@@ -1335,6 +1651,11 @@ export default function Home() {
                 {totalCartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-bps-orange text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                     {totalCartCount}
+                  </span>
+                )}
+                {currentUser.role === 'ADMIN' && pendingRequestsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {pendingRequestsCount}
                   </span>
                 )}
               </button>

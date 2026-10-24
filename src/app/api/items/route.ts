@@ -1,32 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const query = req.nextUrl.searchParams.get('q') || '';
-    const category = req.nextUrl.searchParams.get('category') || '';
-    const lowStock = req.nextUrl.searchParams.get('lowStock') === 'true';
+    const { searchParams } = new URL(req.url);
+    const q = searchParams.get('q') || '';
+    const categoryName = searchParams.get('category') || '';
 
     const whereClause: any = {};
 
-    if (query) {
+    if (q) {
       whereClause.OR = [
-        { name: { contains: query } },
-        { kodeSakti: { contains: query } },
-        { barcode: { contains: query } },
+        { name: { contains: q } },
+        { kodeSakti: { contains: q } },
+        { barcode: { contains: q } },
       ];
     }
 
-    if (category && category !== 'Semua') {
+    if (categoryName && categoryName !== 'Semua') {
       whereClause.category = {
-        name: category,
-      };
-    }
-
-    if (lowStock) {
-      // items where current stock <= minimum stock
-      whereClause.stokSaatIni = {
-        lte: 5,
+        name: categoryName,
       };
     }
 
@@ -99,6 +92,19 @@ export async function POST(req: Request) {
         category: true,
       },
     });
+
+    // If initial stock is greater than 0, also log the initial StockIn transaction
+    if (initialStock > 0) {
+      await prisma.stockIn.create({
+        data: {
+          itemId: newItem.id,
+          jumlah: initialStock,
+          sumber: 'APBN',
+          keterangan: 'Saldo awal / pengadaan pertama barang baru',
+          adminName: 'Admin TU',
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, item: newItem });
   } catch (error: any) {

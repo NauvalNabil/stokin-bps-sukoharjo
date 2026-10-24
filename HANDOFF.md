@@ -126,6 +126,16 @@ web app managemen stok barang BPS sukoharjo/
    - **Akses UI:** Tersedia tombol cetak di Sidebar Admin, tab *Persetujuan Permintaan*, dan tab *Semua Riwayat Bon*.
 5. **Cetak Formulir Bon Perorangan (`OfficialRequestForm.tsx`):**
    - Mencetak bon resmi per nomor formulir pengajuan staf sesuai format `FORMULIR PERMINTAAN BARANG ALAT TULIS KANTOR.docx`.
+6. **Buku & Riwayat Penerimaan Barang Masuk (`StockInReportForm.tsx` & Export Excel):**
+   - **Tampilan Khusus Admin TU:** Tab interaktif *"Riwayat Barang Masuk"* (`activeTab === 'barang_masuk'`) untuk memantau seluruh arus fisik barang masuk ke gudang BPS Sukoharjo.
+   - **Tiga Variabel Pengadaan Ditampilkan Penuh:**
+     - *Sumber Pengadaan*: APBN DIPA Sukoharjo, Transfer Masuk BPS Provinsi, atau Hibah/Lainnya (dilengkapi badge warna).
+     - *Nomor Nota / BAST*: Nomor registrasi dokumen fisik kuitansi / BAST / surat jalan (format font mono).
+     - *Keterangan*: Catatan alokasi/kegiatan pengadaan barang.
+     - *Dicatat Oleh*: Nama Admin TU pencatat transaksi.
+   - **Cetak Laporan Resmi Masuk (`StockInReportForm.tsx`):** Dokumen cetak siap PDF/printer bertajuk *"DAFTAR / BUKU PENERIMAAN BARANG PERSEDIAAN (ATK)"* ber-kop Satker BPS Sukoharjo (`054010300019098000KD`), rekap total kuantitas unit, dan tanda tangan resmi PPK/Kasubbag Umum serta Pengelola Persediaan TU.
+   - **Ekspor Excel (.xlsx):** Endpoint `GET /api/reports/export-excel?type=stock-in` menghasilkan file `.xlsx` untuk audit BMN / Inspektorat.
+   - **Pencatatan Otomatis Saldo Awal:** Setiap penambahan barang baru dengan `stokAwal > 0` otomatis tercatat sebagai transaksi pengadaan pertama di tabel riwayat barang masuk.
 
 ---
 

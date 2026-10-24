@@ -10,7 +10,7 @@ export async function GET() {
         },
       },
       orderBy: { tanggal: 'desc' },
-      take: 100,
+      take: 500,
     });
 
     return NextResponse.json({ stockIns });
