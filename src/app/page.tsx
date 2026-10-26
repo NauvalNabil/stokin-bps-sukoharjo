@@ -826,29 +826,6 @@ export default function Home() {
                   Belum punya akun? Daftar sebagai staf baru →
                 </button>
               </div>
-
-              {/* Quick Fill Admin TU for Testing */}
-              <div className="mt-6 pt-4 border-t border-slate-100">
-                <p className="text-[11px] text-slate-400 font-medium mb-2 text-center">
-                  Akses Khusus Administrator Gudang / TU:
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginEmail('admin@bps.go.id');
-                    setLoginPassword('admin123');
-                  }}
-                  className="w-full bg-slate-50 hover:bg-sky-50 border border-slate-200 hover:border-sky-300 p-2.5 rounded-xl flex items-center justify-between text-xs transition-all text-left group"
-                >
-                  <div>
-                    <span className="font-bold text-slate-800 block text-xs group-hover:text-sky-700">Novia Dwima Santi, S.Tr.Stat</span>
-                    <span className="text-[10px] text-slate-500">Admin TU (admin@bps.go.id)</span>
-                  </div>
-                  <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2.5 py-1 rounded-full group-hover:bg-sky-600 group-hover:text-white transition-all">
-                    Isi Otomatis
-                  </span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -872,7 +849,7 @@ export default function Home() {
                     required
                     value={registerForm.name}
                     onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                    placeholder="Contoh: Muhammad Nabil, S.Tr.Stat"
+                    placeholder="Contoh: Nama Lengkap, Gelar"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
