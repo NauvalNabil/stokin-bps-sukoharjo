@@ -5,20 +5,29 @@ export async function POST(req: Request) {
   try {
     const { name, email, password, nip, team, phone } = await req.json();
 
-    if (!name || !email || !password) {
+    if (!name || !name.trim() || !email || !email.trim() || !password) {
       return NextResponse.json(
-        { error: 'Nama, email, dan password wajib diisi' },
+        { error: 'Nama lengkap, email, dan password wajib diisi' },
         { status: 400 }
       );
     }
 
+    if (password.length < 4) {
+      return NextResponse.json(
+        { error: 'Password minimal 4 karakter' },
+        { status: 400 }
+      );
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: cleanEmail },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email sudah terdaftar. Silakan gunakan email lain.' },
+        { error: 'Email sudah terdaftar. Silakan gunakan email lain atau langsung masuk.' },
         { status: 400 }
       );
     }
@@ -26,12 +35,12 @@ export async function POST(req: Request) {
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         password: password,
         nip: nip?.trim() || null,
-        team: team || 'Subbagian Umum',
+        team: team?.trim() || 'Subbagian Umum',
         phone: phone?.trim() || null,
-        role: 'STAFF', // Self registered users default to STAFF
+        role: 'STAFF', // Setiap pendaftar baru otomatis role STAFF
       },
     });
 
@@ -44,7 +53,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Gagal mendaftarkan akun' },
+      { error: 'Gagal mendaftarkan akun baru' },
       { status: 500 }
     );
   }

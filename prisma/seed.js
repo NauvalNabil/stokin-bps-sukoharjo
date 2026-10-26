@@ -1,6 +1,4 @@
 const { PrismaClient } = require('@prisma/client');
-const fs = require('fs');
-const path = require('path');
 
 const prisma = new PrismaClient();
 
@@ -24,62 +22,36 @@ async function main() {
   });
   console.log('✓ Setting instansi BPS Sukoharjo seeded.');
 
-  // 2. Seed Users
-  const users = [
-    {
-      name: 'Novia Dwima Santi, S.Tr.Stat',
-      email: 'admin@bps.go.id',
-      nip: '199811062021042001',
-      password: 'admin123',
-      role: 'ADMIN',
-      team: 'Subbagian Umum',
-      phone: '081234567890'
-    },
-    {
-      name: 'Anang Sarwoto, S.Si, MM',
-      email: 'kepala@bps.go.id',
-      nip: '197505271997121001',
-      password: 'admin123',
-      role: 'KASUBAG',
-      team: 'Subbagian Umum',
-      phone: '081298765432'
-    },
-    {
-      name: 'Nabil',
-      email: 'nabil@gmail.com',
-      nip: '199901012024011001',
-      password: 'staf123',
-      role: 'STAFF',
-      team: 'Tim Statistik Sosial',
-      phone: '085712345678'
-    },
-    {
-      name: 'Budi Hartono',
-      email: 'budi@gmail.com',
-      nip: '199203152019021002',
-      password: 'staf123',
-      role: 'STAFF',
-      team: 'Tim Statistik Produksi',
-      phone: '081399887766'
-    }
-  ];
+  // 2. Seed Admin User ONLY
+  const adminUser = {
+    name: 'Novia Dwima Santi, S.Tr.Stat',
+    email: 'admin@bps.go.id',
+    nip: '199811062021042001',
+    password: 'admin123',
+    role: 'ADMIN',
+    team: 'Subbagian Umum',
+    phone: '081234567890'
+  };
 
-  for (const u of users) {
-    await prisma.user.upsert({
-      where: { email: u.email },
-      update: {},
-      create: u
-    });
-  }
-  console.log(`✓ ${users.length} Users seeded.`);
+  await prisma.user.upsert({
+    where: { email: adminUser.email },
+    update: {},
+    create: adminUser
+  });
+  console.log('✓ Admin TU user seeded (Novia Dwima Santi - admin@bps.go.id).');
 
-  // 3. Clear any existing items, requests, stock-ins so catalog starts clean
+  // Delete any non-admin users
+  await prisma.user.deleteMany({
+    where: { email: { not: 'admin@bps.go.id' } }
+  });
+
+  // 3. Clear any existing items, requests, stock-ins so catalog and transactions start fresh from 0
   await prisma.requestItem.deleteMany();
   await prisma.request.deleteMany();
   await prisma.stockIn.deleteMany();
   await prisma.item.deleteMany();
   await prisma.category.deleteMany();
-  console.log('✓ Semua item dan transaksi dikosongkan (katalog mulai dari 0).');
+  console.log('✓ Semua item dan transaksi dikosongkan (katalog & riwayat mulai bersih dari 0).');
 
   console.log('Seeding completed successfully!');
 }

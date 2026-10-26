@@ -35,14 +35,26 @@ import DailyRecapForm from '@/components/DailyRecapForm';
 import StockInReportForm from '@/components/StockInReportForm';
 
 export default function Home() {
-  // Authentication State
+  // Authentication & Mode State
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Register form state (Opsi A)
+  const [registerForm, setRegisterForm] = useState({
+    name: '',
+    email: '',
+    team: 'Tim Statistik Sosial',
+    password: '',
+  });
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Settings
   const [setting, setSetting] = useState<any>(null);
@@ -142,9 +154,6 @@ export default function Home() {
       const data = await res.json();
       if (data.users && data.users.length > 0) {
         setAvailableUsers(data.users);
-        // Default login as staff (Nabil) with his REAL database ID!
-        const staffUser = data.users.find((u: any) => u.role === 'STAFF') || data.users[0];
-        setCurrentUser(staffUser);
       }
     } catch (e) {
       console.error('Failed to load users:', e);
@@ -258,10 +267,23 @@ export default function Home() {
     }
   };
 
+  // BPS Team Options for Registration (Opsi A)
+  const BPS_TEAMS = [
+    'Tim Statistik Sosial',
+    'Tim Statistik Produksi',
+    'Tim Statistik Distribusi',
+    'Tim Neraca Wilayah & Analisis Statistik',
+    'Tim IPDS (Integrasi Pengolahan & Diseminasi Statistik)',
+    'Subbagian Umum',
+    'Pegawai Pemerintah Non Organik / Mitra',
+    'Lainnya / Mahasiswa Magang',
+  ];
+
   // Handle Login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+    setIsLoggingIn(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -271,12 +293,56 @@ export default function Home() {
       const data = await res.json();
       if (data.success && data.user) {
         setCurrentUser(data.user);
-        showToast(`Selamat datang, ${data.user.name}!`);
+        showToast(`Selamat datang kembali, ${data.user.name}!`);
       } else {
-        setLoginError(data.error || 'Login gagal');
+        setLoginError(data.error || 'Login gagal, periksa email dan password Anda');
       }
     } catch (err) {
-      setLoginError('Terjadi kesalahan koneksi');
+      setLoginError('Terjadi kesalahan koneksi saat login');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  // Handle Register (Opsi A - Otomatis Role STAFF & Langsung Masuk Dashboard)
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterError(null);
+    if (!registerForm.name.trim() || !registerForm.email.trim() || !registerForm.password) {
+      setRegisterError('Nama lengkap, email, dan password wajib diisi');
+      return;
+    }
+    if (registerForm.password.length < 4) {
+      setRegisterError('Password minimal 4 karakter');
+      return;
+    }
+    setIsRegistering(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registerForm),
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setCurrentUser(data.user);
+        setActiveTab('katalog');
+        showToast(`✓ Pendaftaran berhasil! Selamat datang, ${data.user.name}.`);
+        fetchUsers();
+        fetchData();
+        setRegisterForm({
+          name: '',
+          email: '',
+          team: 'Tim Statistik Sosial',
+          password: '',
+        });
+      } else {
+        setRegisterError(data.error || 'Pendaftaran gagal');
+      }
+    } catch (err) {
+      setRegisterError('Terjadi kesalahan koneksi saat pendaftaran');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -675,72 +741,217 @@ export default function Home() {
             <p className="text-xs text-slate-500 mt-1">Sistem Tracking Operasional & Ketersediaan Inventaris ATK</p>
           </div>
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
-            {loginError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>{loginError}</span>
-              </div>
-            )}
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">Email:</label>
-              <input
-                type="email"
-                required
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="nama@bps.go.id atau email pribadi"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-slate-700 block mb-1">Password:</label>
-              <input
-                type="password"
-                required
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
+          {/* Auth Mode Toggle: Masuk vs Daftar */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl mb-5 text-xs font-semibold">
             <button
-              type="submit"
-              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl shadow-sm transition-all"
+              type="button"
+              onClick={() => {
+                setAuthMode('login');
+                setLoginError(null);
+              }}
+              className={`flex-1 py-2 rounded-xl transition-all ${
+                authMode === 'login'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
             >
-              Masuk
+              Masuk Akun
             </button>
-          </form>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('register');
+                setRegisterError(null);
+              }}
+              className={`flex-1 py-2 rounded-xl transition-all ${
+                authMode === 'register'
+                  ? 'bg-white text-sky-700 shadow-2xs font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              Daftar Pegawai Baru
+            </button>
+          </div>
 
-          {/* Quick Demo Login Buttons */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-[11px] text-slate-400 font-semibold mb-2.5 text-center">
-              Pilih Akun Demo (Satu Klik):
-            </p>
-            <div className="space-y-2">
-              {availableUsers.map((u) => (
+          {/* MODE 1: LOGIN FORM */}
+          {authMode === 'login' && (
+            <div>
+              <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+                {loginError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Email:</label>
+                  <input
+                    type="email"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="nama@bps.go.id atau email pribadi"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Password:</label>
+                  <input
+                    type="password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
                 <button
-                  key={u.id}
-                  onClick={() => handleSelectUser(u)}
-                  className="w-full text-left bg-slate-50 hover:bg-sky-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-between text-xs transition-all group"
+                  type="submit"
+                  disabled={isLoggingIn}
+                  className="w-full bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl shadow-sm transition-all"
+                >
+                  {isLoggingIn ? 'Memproses Masuk...' : 'Masuk ke Sistem'}
+                </button>
+              </form>
+
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('register');
+                    setRegisterError(null);
+                  }}
+                  className="text-xs text-sky-600 hover:text-sky-800 font-semibold transition-colors"
+                >
+                  Belum punya akun? Daftar sebagai staf baru →
+                </button>
+              </div>
+
+              {/* Quick Fill Admin TU for Testing */}
+              <div className="mt-6 pt-4 border-t border-slate-100">
+                <p className="text-[11px] text-slate-400 font-medium mb-2 text-center">
+                  Akses Khusus Administrator Gudang / TU:
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginEmail('admin@bps.go.id');
+                    setLoginPassword('admin123');
+                  }}
+                  className="w-full bg-slate-50 hover:bg-sky-50 border border-slate-200 hover:border-sky-300 p-2.5 rounded-xl flex items-center justify-between text-xs transition-all text-left group"
                 >
                   <div>
-                    <span className="font-bold text-slate-800 block group-hover:text-sky-700">{u.name}</span>
-                    <span className="text-[10px] text-slate-500">{u.team}</span>
+                    <span className="font-bold text-slate-800 block text-xs group-hover:text-sky-700">Novia Dwima Santi, S.Tr.Stat</span>
+                    <span className="text-[10px] text-slate-500">Admin TU (admin@bps.go.id)</span>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      u.role === 'ADMIN'
-                        ? 'bg-sky-100 text-sky-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {u.role === 'ADMIN' ? 'Admin TU' : 'Staf Pegawai'}
+                  <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2.5 py-1 rounded-full group-hover:bg-sky-600 group-hover:text-white transition-all">
+                    Isi Otomatis
                   </span>
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* MODE 2: REGISTER FORM (Opsi A) */}
+          {authMode === 'register' && (
+            <div>
+              <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
+                {registerError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{registerError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Nama Lengkap & Gelar: <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={registerForm.name}
+                    onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                    placeholder="Contoh: Muhammad Nabil, S.Tr.Stat"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Email Pengguna: <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={registerForm.email}
+                    onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                    placeholder="nama@bps.go.id atau email pribadi"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Unit Kerja / Tim BPS: <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={registerForm.team}
+                    onChange={(e) => setRegisterForm({ ...registerForm, team: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-sky-500 text-xs font-medium text-slate-700"
+                  >
+                    {BPS_TEAMS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Unit kerja akan otomatis tercantum pada formulir bon ATK Anda.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Password Akun: <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={registerForm.password}
+                    onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                    placeholder="Minimal 4 karakter"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div className="bg-sky-50 border border-sky-100 p-2.5 rounded-xl text-[11px] text-sky-800">
+                  ℹ️ Akun baru otomatis memiliki peran sebagai <strong>Staf Pegawai</strong> untuk mengajukan permohonan ATK.
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl shadow-sm transition-all"
+                >
+                  {isRegistering ? 'Mendaftarkan Akun...' : 'Daftar & Masuk ke Dashboard'}
+                </button>
+              </form>
+
+              <div className="text-center mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setLoginError(null);
+                  }}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-semibold transition-colors"
+                >
+                  Sudah memiliki akun? Masuk di sini →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

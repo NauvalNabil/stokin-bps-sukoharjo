@@ -94,13 +94,12 @@ web app managemen stok barang BPS sukoharjo/
 - **Pengelola Persediaan / Admin TU:** `Novia Dwima Santi, S.Tr.Stat` (NIP. `199811062021042001`)
 - **Alamat:** Jl. Jenderal Sudirman No. 199, Sukoharjo
 
-### Akun Login yang Tersedia:
-| Nama Pengguna | Email | Password | Role | Tim / Unit Kerja |
-| :--- | :--- | :--- | :--- | :--- |
-| **Novia Dwima Santi, S.Tr.Stat** | `admin@bps.go.id` | `admin123` | `ADMIN` | Subbagian Umum |
-| **Nabil** | `nabil@gmail.com` | `staf123` | `STAFF` | Tim Statistik Sosial |
-| **Budi Hartono** | `budi@gmail.com` | `staf123` | `STAFF` | Tim Statistik Produksi |
-| **Anang Sarwoto, S.Si, MM** | `kepala@bps.go.id` | `admin123` | `KASUBAG` | Subbagian Umum |
+### Akun Login Bawaan Sistem:
+| Nama Pengguna | Email | Password | Role | Tim / Unit Kerja | Keterangan |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Novia Dwima Santi, S.Tr.Stat** | `admin@bps.go.id` | `admin123` | `ADMIN` | Subbagian Umum | Akun Administrator Gudang / Pengelola Persediaan |
+
+> **Catatan:** Seluruh akun demo staf dan transaksi lama telah dibersihkan (*clean start*). Pegawai baru dapat mendaftar mandiri melalui formulir **"Daftar Pegawai Baru"** pada layar awal (otomatis memperoleh role `STAFF` dan langsung masuk ke dashboard).
 
 ---
 
@@ -142,6 +141,11 @@ web app managemen stok barang BPS sukoharjo/
    - Mengklik kartu profil pengguna (*user bar*) di bagian atas *sidebar* (atau header mobile) akan membuka halaman **Pengaturan Profil Pengguna & Identitas Pelaporan**.
    - Pengguna (Staf maupun Admin) dapat mengedit **Nama Lengkap & Gelar**, **NIP**, **Unit Kerja/Tim**, **Email**, **No. Telepon**, serta **Password**.
    - Khusus Admin TU, perubahan Nama & NIP otomatis menyinkronkan identitas *Administrator Gudang / Pengelola Persediaan* pada `Setting` dan riwayat transaksi, serta menyediakan form pengaturan Kop Satker dan Nama/NIP Kepala BPS. Seluruh cetakan (`OfficialRequestForm`, `DailyRecapForm`, `StockInReportForm`) otomatis menyesuaikan dengan data terbaru.
+9. **Autentikasi & Registrasi Mandiri Pegawai Baru (`/api/auth/register` & `page.tsx`):**
+   - Layar awal menyediakan tab beralih antara **"Masuk Akun"** dan **"Daftar Pegawai Baru"**.
+   - Form pendaftaran pegawai baru mengumpulkan: **Nama Lengkap & Gelar**, **Email**, **Pilihan Unit Kerja / Tim BPS (Dropdown Opsi A)**, dan **Password**.
+   - Pendaftar baru secara otomatis berstatus **`STAFF`** dan langsung dialihkan masuk (*auto-login*) ke dashboard katalog barang ATK.
+   - Database telah dibersihkan dari seluruh data dummy (katalog, bon, dan akun demo). Hanya akun Admin TU (`admin@bps.go.id`) yang dipertahankan sebagai administrator utama.
 
 ---
 
