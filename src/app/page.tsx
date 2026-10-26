@@ -1611,20 +1611,13 @@ export default function Home() {
                         )}
                       </div>
 
-                      {currentUser.role === 'ADMIN' ? (
+                      {currentUser.role === 'ADMIN' && (
                         <button
                           onClick={() => setShowDailyRecap(true)}
                           className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs transition-all"
                         >
                           <Printer className="w-3.5 h-3.5" />
                           <span>Cetak Rekap Harian</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setActiveTab('katalog')}
-                          className="text-xs text-sky-600 font-semibold hover:underline px-2 py-1"
-                        >
-                          + Minta Barang Baru
                         </button>
                       )}
                     </div>
